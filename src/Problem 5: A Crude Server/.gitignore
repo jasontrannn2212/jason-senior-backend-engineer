@@ -1,0 +1,25 @@
+# Node.js
+node_modules/
+dist/
+
+# Environment variables
+.env
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor directories and files
+.vscode/
+.idea/
+.DS_Store
+
+# Prisma
+prisma/.env
+.prisma/
+
+# Docker
+docker-compose.override.yml

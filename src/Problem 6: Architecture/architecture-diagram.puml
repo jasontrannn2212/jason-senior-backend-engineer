@@ -1,0 +1,52 @@
+@startuml
+actor User
+entity Frontend
+entity Backend
+entity Redis
+entity "Authentication Service" as AuthService
+
+User -> Frontend : login
+Frontend -> Backend : Call Login API (POST /api/v1/login)
+Backend -> AuthService : Call
+AuthService -> AuthService : Verify user credentials
+
+alt Login succeed
+  AuthService --> Backend : Respond an access token
+  Backend --> Frontend : Respond an access token
+else Login fails
+  AuthService --> Backend : Respond an error
+  Backend --> Frontend : Respond an error
+end
+
+User -> Frontend : Perform an action
+note right of User
+    Action is completed
+end note
+alt User is authenticated
+    Frontend -> Backend : Send API Request (POST /api/v1/scores/increase)
+    Backend -> AuthService : Verify Token (JWT)
+    AuthService --> Backend : Token is valid
+    Backend -> Redis : ZINCRBY user_leaderboard <increment> <userId>
+    Redis --> Backend : Return updated score
+    Backend -> Frontend : Return success response (with updated score)
+    Frontend -> Frontend : Update UI with new score
+
+    Frontend -> Backend : Request user_leaderboard (GET /api/v1/scores/top)
+    Backend -> AuthService : Verify Token (JWT)
+    AuthService --> Backend : Token is valid
+    Backend -> Redis : ZRANGE user_leaderboard 0 9 WITHSCORES
+    Redis --> Backend : Return top 10 leaderboard
+    Backend --> Frontend : Return user_leaderboard data
+    Frontend -> WebSocket : Send update to clients in real time using Websocket
+else User not authenticated
+    Frontend -> Backend : Send API Request (POST /api/v1/scores/increase)
+    Backend -> AuthService : Verify Token (JWT)
+    AuthService --> Backend : Token is invalid
+    Backend --> Frontend : Send authentication failure response
+
+    Frontend -> Backend : Request user_leaderboard (GET /api/v1/scores/top)
+    Backend -> AuthService : Verify Token (JWT)
+    AuthService --> Backend : Token is invalid
+    Backend --> Frontend : Send authentication failure response
+end
+@enduml
